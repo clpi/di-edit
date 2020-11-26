@@ -1,0 +1,19 @@
+[package]
+name = "di-edit"
+version = "0.1.0"
+authors = ["Chris P <chris@pecu.io>"]
+edition = "2018"
+description = "A terminal text editor, specialized for writing and scripting"
+homepage = "https://pecu.io/dx"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crossterm = "*"
+unicode-segmentation = "*"
+unicode-width = "*"
+# shellexpand = "*"
+# serde = "*"
+directories-next = "*"
+regex = "*"
+# term = "*"
