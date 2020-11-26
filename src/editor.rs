@@ -1,22 +1,20 @@
 pub mod row;
+pub mod theme;
+pub mod config;
 
+use std::{thread, sync};
 use crate::{
     term::{Term, TermOp},
     file::OpenFile,
     editor::row::Row,
 };
-use std::{
-    io::{self, stdout, Read, Write}, env
-};
+use std::env;
 use crossterm::{
-    cursor,
-    event::{self, KeyCode, KeyEvent, Event, KeyModifiers},
-    style::{Color, Colors, Attribute, SetBackgroundColor, SetForegroundColor},
-    ErrorKind, Result as TermResult,
+    event::{KeyCode, KeyEvent, KeyModifiers, read, poll},
+    style::Color, Result as TermResult,
 };
-use regex::Regex;
 
-
+#[derive(Debug)]
 pub struct Editor{
     quit: bool,
     insert: bool,
@@ -28,6 +26,10 @@ pub struct Editor{
 }
 
 impl Editor {
+
+    pub fn init(&mut self, threads: u8) -> TermResult<()> {
+        self.run()
+    }
 
     pub fn run(&mut self) -> TermResult<()> {
         loop {
@@ -46,7 +48,7 @@ impl Editor {
         Term::ex(TermOp::CursorEnabled(false))?;
         Term::ex(TermOp::SetCursor(Coords::default()))?;
         if self.quit {
-            Term::ex(TermOp::Clear)?;
+            Term::ex(TermOp::ClearLn)?;
         } else {
             self.draw_rows()?;
             self.draw_status()?;
@@ -102,7 +104,7 @@ impl Editor {
     fn draw_rows(&self) -> TermResult<()> {
         let t_height = self.term.dims.y;
         for row_idx in 0..t_height {
-            Term::ex(TermOp::Clear)?;
+            Term::ex(TermOp::ClearLn)?;
             let curr = self.curr_file();
             if let Some(row) = curr.get(row_idx + self.offset.y) {
                 self.draw_row(&row);
@@ -116,15 +118,14 @@ impl Editor {
     }
 
     fn draw_status(&self) -> TermResult<()> {
-        let spc = " ".repeat(self.term.dims.x as usize);
         Term::ex(TermOp::SetBg(Color::Cyan))?;
-        println!("{}\r", spc);
+        println!("{}\r", " ".repeat(self.term.dims.x as usize));
         Term::ex(TermOp::SetBg(Color::Reset))?;
         Ok(())
     }
 
     fn draw_msg(&self) -> TermResult<()> {
-        Term::ex(TermOp::Clear)?;
+        Term::ex(TermOp::ClearLn)?;
         Ok(())
     }
 
@@ -221,7 +222,7 @@ impl Default for Editor {
 }
 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Coords {
     pub x: usize, pub y: usize
 }
@@ -244,6 +245,7 @@ impl From<(u16, u16)> for Coords {
     }
 }
 
+#[derive(Debug)]
 pub enum Dir {
     Up, Down, Left, Right, Tab,
 }

@@ -1,21 +1,25 @@
 use std::io::{self, stdout, Write};
 use crossterm::{
+    Command, queue, tty::IsTty,
     cursor::{self, MoveTo}, execute, Result as TermResult,
     terminal::{ScrollUp, ScrollDown},
-    terminal::{self, ClearType, LeaveAlternateScreen, EnterAlternateScreen},
-    event::{self, Event, KeyEvent, KeyCode, KeyModifiers, read},
-    style::{Color, Colors, SetForegroundColor, SetBackgroundColor},
+    terminal::{self, LeaveAlternateScreen, EnterAlternateScreen, Clear, ClearType},
+    event::{Event, KeyEvent, read},
+    style::{Color, SetForegroundColor, SetBackgroundColor, SetColors},
 };
-use cursor::MoveUp;
+
 use crate::editor::{Coords, Dir};
 
+#[derive(Debug)]
 pub struct Term {
     pub dims: Coords,
     _stdout: io::Stdout,
 }
 
+#[derive(Debug)]
 pub enum TermOp {
     Clear,
+    ClearLn,
     Enter,
     Exit,
     Flush,
@@ -31,6 +35,7 @@ impl Term {
 
     pub fn new() -> TermResult<Self> {
         let dims: Coords = terminal::size().unwrap_or_default().into();
+        execute!(stdout(), terminal::SetTitle("dd"))?;
         Self::ex(TermOp::Enter)?;
         Ok ( Self { dims, _stdout: stdout() })
     }
@@ -41,9 +46,11 @@ impl Term {
         match operation {
             Enter => {
                 terminal::enable_raw_mode()?;
+                execute!(so, terminal::Clear(ClearType::All))?;
                 execute!(so, EnterAlternateScreen)?
             },
-            Clear => execute!(so, LeaveAlternateScreen)?,
+            Clear => execute!(so, terminal::Clear(ClearType::All))?,
+            ClearLn => execute!(so, terminal::Clear(ClearType::CurrentLine))?,
             Exit => {
                 execute!(so, LeaveAlternateScreen)?;
                 terminal::disable_raw_mode()?;
@@ -65,8 +72,7 @@ impl Term {
                 Dir::Up => execute!(so, ScrollUp(amt))?,
                 Dir::Down => execute!(so, ScrollDown(amt))?,
                 _ => (),
-            }
-            _ => {}
+            },
         }
         Ok(())
     }

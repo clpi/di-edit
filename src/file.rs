@@ -1,6 +1,7 @@
 use std::{io, fs};
 use crate::editor::row::Row;
 
+#[derive(Debug)]
 pub struct OpenFile {
     rows: Vec<Row>,
 

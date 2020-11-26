@@ -12,6 +12,6 @@ pub mod term;
 use editor::Editor;
 
 fn main() -> crossterm::Result<()> {
-    Editor::default().run()
+     Editor::default().run()
 }
 

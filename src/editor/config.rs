@@ -1,8 +1,9 @@
 #[derive(Debug)]
-pub struct Theme {
+pub struct Config {
 
 }
 
-impl Theme {
+impl Config {
     pub fn new() -> Self { Self {  } }
 }
+

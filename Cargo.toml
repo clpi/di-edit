@@ -9,7 +9,7 @@ homepage = "https://pecu.io/dx"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crossterm = "*"
+crossterm = {version="*", features=["event-stream"]}
 unicode-segmentation = "*"
 unicode-width = "*"
 # shellexpand = "*"
