@@ -31,11 +31,11 @@ impl Term {
 
     pub fn new() -> TermResult<Self> {
         let dims: Coords = terminal::size().unwrap_or_default().into();
-        Self::execute(TermOp::Enter)?;
+        Self::ex(TermOp::Enter)?;
         Ok ( Self { dims, _stdout: stdout() })
     }
 
-    pub fn execute(operation: TermOp) -> TermResult<()> {
+    pub fn ex(operation: TermOp) -> TermResult<()> {
         let mut so: io::Stdout = stdout();
         use TermOp::*;
         match operation {

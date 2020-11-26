@@ -43,21 +43,21 @@ impl Editor {
     }
 
     fn refresh(&self) -> TermResult<()> {
-        Term::execute(TermOp::CursorEnabled(false))?;
-        Term::execute(TermOp::SetCursor(Coords::default()))?;
+        Term::ex(TermOp::CursorEnabled(false))?;
+        Term::ex(TermOp::SetCursor(Coords::default()))?;
         if self.quit {
-            Term::execute(TermOp::Clear)?;
+            Term::ex(TermOp::Clear)?;
         } else {
             self.draw_rows()?;
             self.draw_status()?;
             self.draw_msg()?;
-            Term::execute(TermOp::SetCursor(Coords {
+            Term::ex(TermOp::SetCursor(Coords {
                 x: self.cursor.x.saturating_sub(self.offset.x),
                 y: self.cursor.y.saturating_sub(self.offset.y),
             }))?;
         }
-        Term::execute(TermOp::CursorEnabled(true))?;
-        Term::execute(TermOp::Flush)
+        Term::ex(TermOp::CursorEnabled(true))?;
+        Term::ex(TermOp::Flush)
     }
 
     fn process_key(&mut self) -> TermResult<()> {
@@ -102,7 +102,7 @@ impl Editor {
     fn draw_rows(&self) -> TermResult<()> {
         let t_height = self.term.dims.y;
         for row_idx in 0..t_height {
-            Term::execute(TermOp::Clear)?;
+            Term::ex(TermOp::Clear)?;
             let curr = self.curr_file();
             if let Some(row) = curr.get(row_idx + self.offset.y) {
                 self.draw_row(&row);
@@ -117,14 +117,14 @@ impl Editor {
 
     fn draw_status(&self) -> TermResult<()> {
         let spc = " ".repeat(self.term.dims.x as usize);
-        Term::execute(TermOp::SetBg(Color::Cyan))?;
+        Term::ex(TermOp::SetBg(Color::Cyan))?;
         println!("{}\r", spc);
-        // Term::reset_bg();
+        Term::ex(TermOp::SetBg(Color::Reset))?;
         Ok(())
     }
 
     fn draw_msg(&self) -> TermResult<()> {
-        Term::execute(TermOp::Clear)?;
+        Term::ex(TermOp::Clear)?;
         Ok(())
     }
 
@@ -153,8 +153,8 @@ impl Editor {
                 Down | Char('j') => {Dir::Down.go(1)?; new.y -=1 },
                 Left | Char('h')=> {Dir::Left.go(1)?; new.x -=1;},
                 Right | Char('l')=> {Dir::Right.go(1)?; new.x += 1;},
-                PageUp => {Term::execute(TermOp::Scroll(Dir::Up, 1))?;},
-                PageDown => {Term::execute(TermOp::Scroll(Dir::Up, 1))?},
+                PageUp => {Term::ex(TermOp::Scroll(Dir::Up, 1))?;},
+                PageDown => {Term::ex(TermOp::Scroll(Dir::Up, 1))?},
                 Home => new.x = 0,
                 End => new.x = self.curr_file()
                     .get(self.cursor.x as usize)
@@ -164,8 +164,8 @@ impl Editor {
         } else if event.modifiers.contains(KeyModifiers::CONTROL) {
             use TermOp::Scroll;
             match event.code {
-                Char('j') => {Term::execute(Scroll(Dir::Down, 1))?;},
-                Char('k') => {Term::execute(Scroll(Dir::Up, 1))?;},
+                Char('j') => {Term::ex(Scroll(Dir::Down, 1))?;},
+                Char('k') => {Term::ex(Scroll(Dir::Up, 1))?;},
                 _ => new.y = 0,
             }
         }
@@ -185,6 +185,19 @@ impl Editor {
         println!("{}\r", &msg[..width])
 
     }
+
+    fn add_file(&mut self, file: OpenFile) {
+        self.files.push(file);
+        self.file_idx = self.files.len();
+    }
+
+    fn del_file(&mut self, file_idx: usize) {
+        self.files.remove(file_idx);
+        if self.file_idx == self.files.len() + 1 {
+            self.file_idx = self.files.len();
+        }
+    }
+
 }
 
 impl Default for Editor {
@@ -206,6 +219,7 @@ impl Default for Editor {
         }
     }
 }
+
 
 #[derive(Default, Clone)]
 pub struct Coords {
@@ -237,7 +251,7 @@ pub enum Dir {
 impl Dir {
 
     pub fn go(self, amount: usize) -> TermResult<()> {
-        Term::execute(TermOp::Move(self, amount as u16))?;
+        Term::ex(TermOp::Move(self, amount as u16))?;
         Ok(())
     }
 }
