@@ -1,9 +1,10 @@
-use std::io::{self, stdout, Write};
+use std::io::{self, stdout, stdin, Stdout, Read, Write};
 use crossterm::{
-    Command, queue, tty::IsTty,
-    cursor::{self, MoveTo}, execute, Result as TermResult,
-    terminal::{ScrollUp, ScrollDown},
-    terminal::{self, LeaveAlternateScreen, EnterAlternateScreen, Clear, ClearType},
+    tty::IsTty,
+    cursor::{MoveTo, self},
+    write_ansi_code, execute, queue,
+    Command, Result as TermResult,
+    terminal::{self, LeaveAlternateScreen, EnterAlternateScreen, Clear, ClearType, ScrollUp, ScrollDown},
     event::{Event, KeyEvent, read},
     style::{Color, SetForegroundColor, SetBackgroundColor, SetColors},
 };
@@ -35,18 +36,21 @@ impl Term {
 
     pub fn new() -> TermResult<Self> {
         let dims: Coords = terminal::size().unwrap_or_default().into();
-        execute!(stdout(), terminal::SetTitle("dd"))?;
+        if io::stdin().is_tty() && io::stdout().is_tty() {
+            terminal::enable_raw_mode()?;
+        }
+        //execute!(io::stdout(), terminal::SetTitle("dd"))?;
         Self::ex(TermOp::Enter)?;
-        Ok ( Self { dims, _stdout: stdout() })
+        Ok ( Self { dims, _stdout: io::stdout() })
     }
 
     pub fn ex(operation: TermOp) -> TermResult<()> {
-        let mut so: io::Stdout = stdout();
+        let mut so: io::Stdout = io::stdout();
         use TermOp::*;
         match operation {
             Enter => {
                 terminal::enable_raw_mode()?;
-                execute!(so, terminal::Clear(ClearType::All))?;
+                crossterm::queue!(so, terminal::Clear(ClearType::All))?;
                 execute!(so, EnterAlternateScreen)?
             },
             Clear => execute!(so, terminal::Clear(ClearType::All))?,

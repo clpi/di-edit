@@ -2,7 +2,7 @@ pub mod row;
 pub mod theme;
 pub mod config;
 
-use std::{thread, sync};
+use std::{thread, sync, io};
 use crate::{
     term::{Term, TermOp},
     file::OpenFile,
@@ -32,15 +32,15 @@ impl Editor {
     }
 
     pub fn run(&mut self) -> TermResult<()> {
-        loop {
-            if let Err(err) = self.refresh() {
-                panic!(err);
-            }
-            if self.quit { break; }
+        // loop {
+            // if let Err(err) = self.refresh() {
+            //     panic!(err);
+            // }
+            // if self.quit { break; }
             if let Err(error) = self.process_key() {
                 panic!(error);
             }
-        }
+        // }
         Ok(())
     }
 
@@ -257,3 +257,4 @@ impl Dir {
         Ok(())
     }
 }
+
