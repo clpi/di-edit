@@ -39,9 +39,7 @@ impl Term {
 
     pub fn new() -> TermResult<Self> {
         let dims: Coords = terminal::size().unwrap_or_default().into();
-        if io::stdin().is_tty() && io::stdout().is_tty() {
-            terminal::enable_raw_mode()?;
-        }
+        terminal::enable_raw_mode()?;
         execute!(io::stdout(), terminal::SetTitle("dd"))?;
         Ok ( Self { dims, _stdout: io::stdout() })
     }
@@ -51,11 +49,6 @@ impl Term {
         Ok(())
     }
 
-    pub fn process_key() -> TermResult<()> {
-        let action = Self::read_key()?;
-        action.execute()?;
-        Ok(())
-    }
 
     pub fn ex(operation: TermOp) -> TermResult<()> {
         let mut so: io::Stdout = io::stdout();

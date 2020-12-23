@@ -20,6 +20,7 @@ crossterm = {version="*", features=["event-stream"]}
 term = "*"
 unicode-segmentation = "*"
 unicode-width = "*"
+lsp-types = "*"
 # shellexpand = "*"
 # serde = "*"
 directories-next = "*"

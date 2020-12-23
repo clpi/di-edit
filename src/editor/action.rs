@@ -12,6 +12,7 @@ use crossterm::{
     event::{KeyCode, KeyModifiers},
 };
 
+#[derive(Debug)]
 pub enum Action {
     Move(Direction),
     MoveText(Target, Direction),
@@ -23,12 +24,15 @@ pub enum Action {
     SwitchBuffer(RelativeLocation),
     SwitchTab(RelativeLocation),
     Newline(Direction),
+    OpenFile(std::fs::File),
+    DelFile(std::fs::File),
     Quit,
     Copy(Target),
     Paste,
 
 }
 
+#[derive(Debug)]
 pub enum Direction {
     Up(u16),
     Down(u16),
@@ -37,6 +41,8 @@ pub enum Direction {
     ToIdx((u16, u16)),
     To(Location),
 }
+
+#[derive(Debug)]
 pub enum Target {
     Word,
     Document,
@@ -52,12 +58,14 @@ pub enum Target {
     Region(u32, u32),
 }
 
+#[derive(Debug)]
 pub enum Location {
     End(Target),
     Beginning(Target),
     Index(u8),
 }
 
+#[derive(Debug)]
 pub enum RelativeLocation {
     Next,
     Previous,

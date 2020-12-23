@@ -3,7 +3,7 @@ pub mod row;
 pub mod theme;
 pub mod config;
 
-use std::{thread, sync, io};
+use std::{thread, sync, io::{self, Read, Write}};
 use crate::{
     term::{Term, TermOp},
     file::OpenFile,
@@ -12,6 +12,7 @@ use crate::{
 };
 use std::env;
 use crossterm::{
+    execute, write_ansi_code, cursor, cursor::*,
     event::{KeyCode, KeyEvent, KeyModifiers, read, poll},
     style::Color, Result as TermResult,
 };
@@ -23,20 +24,19 @@ pub struct Editor{
     term: Term,
     cursor: Coords,
     offset: Coords,
+    action: Action,
     files: Vec<OpenFile>,
     file_idx: usize,
 }
 
 impl Editor {
 
-    pub fn init(self, threads: u8) -> TermResult<()> {
-        self.run()
-    }
-
-    pub fn run(mut self) -> TermResult<()> {
-        loop {
-            Term::process_key()?;
+    pub fn run(&mut self) -> TermResult<()> {
+        while self.quit != false {
+            self.refresh()?;
+            self.process_key()?;
         }
+        Ok(())
     }
 
     fn refresh(&self) -> TermResult<()> {
@@ -92,6 +92,11 @@ impl Editor {
         Ok(())
     }
 
+    pub fn process_key(&mut self) -> TermResult<()> {
+        Self::execute(Term::read_key()?)?;
+        Ok(())
+    }
+
     fn draw_msg(&self) -> TermResult<()> {
         Term::ex(TermOp::ClearLn)?;
         Ok(())
@@ -131,6 +136,25 @@ impl Editor {
         if self.file_idx == self.files.len() + 1 {
             self.file_idx = self.files.len();
         }
+    }
+
+    pub fn execute(action: Action) -> TermResult<()> {
+        use action::Direction::*;
+        let mut s = std::io::stdout();
+        let pos = Coords::from(cursor::position().unwrap());
+        match action {
+            Action::Move(loc) => match loc {
+                Up(n) => execute!(s, MoveUp(n))?,
+                Down(n) => execute!(s, MoveUp(n))?,
+                Left(n) => execute!(s, MoveUp(n))?,
+                Right(n) => execute!(s, MoveRight(n))?,
+                ToIdx(loc) => execute!(s, MoveTo(loc.0, loc.1))?,
+                _ => {},
+            },
+            Action::Quit => Term::ex(crate::term::TermOp::Exit)?,
+            _ => {},
+        }
+        return Ok(());
     }
 
 }
