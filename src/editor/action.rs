@@ -12,27 +12,7 @@ use crossterm::{
     event::{KeyCode, KeyModifiers},
 };
 
-pub struct Action {
-    actions: Vec<KeyAction>,
-}
-
-impl Action {
-
-    pub fn new() -> Self {
-        Self { actions: Vec::new() }
-    }
-
-    pub fn from(actions: Vec<KeyAction>) -> Self {
-        Self { actions }
-    }
-
-    pub fn push(mut self, action: KeyAction) -> Self {
-        self.actions.push(action);
-        self
-    }
-}
-
-pub enum KeyAction {
+pub enum Action {
     Move(Direction),
     MoveText(Target, Direction),
     Scroll(Direction),
@@ -87,30 +67,28 @@ pub enum RelativeLocation {
 impl Action {
 
     pub fn execute(self) -> TermResult<()> {
-        use KeyAction::*;
+        use Action::*;
         use Location::*;
         use Direction::*;
         let mut s = std::io::stdout();
         let pos = Coords::from(cursor::position().unwrap());
-        for action in self.actions {
-            match action {
-                Move(loc) => match loc {
-                    Up(n) => execute!(s, MoveUp(n))?,
-                    Down(n) => execute!(s, MoveUp(n))?,
-                    Left(n) => execute!(s, MoveUp(n))?,
-                    Right(n) => execute!(s, MoveRight(n))?,
-                    ToIdx(loc) => execute!(s, MoveTo(loc.0, loc.1))?,
-                    _ => {},
-                },
-                Quit => Term::ex(crate::term::TermOp::Exit)?,
+        match self {
+            Move(loc) => match loc {
+                Up(n) => execute!(s, MoveUp(n))?,
+                Down(n) => execute!(s, MoveUp(n))?,
+                Left(n) => execute!(s, MoveUp(n))?,
+                Right(n) => execute!(s, MoveRight(n))?,
+                ToIdx(loc) => execute!(s, MoveTo(loc.0, loc.1))?,
                 _ => {},
-            }
+            },
+            Quit => Term::ex(crate::term::TermOp::Exit)?,
+            _ => {},
         }
         return Ok(());
     }
 }
 
-impl From<(KeyCode, KeyModifiers)> for KeyAction {
+impl From<(KeyCode, KeyModifiers)> for Action {
     fn from((key, kmod): (KeyCode, KeyModifiers)) -> Self {
         use Direction::{Up, Down, Left, Right, To};
         use Location::{End, Beginning};

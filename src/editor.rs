@@ -1,3 +1,4 @@
+pub mod action;
 pub mod row;
 pub mod theme;
 pub mod config;
@@ -7,6 +8,7 @@ use crate::{
     term::{Term, TermOp},
     file::OpenFile,
     editor::row::Row,
+    editor::action::Action,
 };
 use std::env;
 use crossterm::{
@@ -27,21 +29,14 @@ pub struct Editor{
 
 impl Editor {
 
-    pub fn init(&mut self, threads: u8) -> TermResult<()> {
+    pub fn init(self, threads: u8) -> TermResult<()> {
         self.run()
     }
 
-    pub fn run(&mut self) -> TermResult<()> {
-        // loop {
-            // if let Err(err) = self.refresh() {
-            //     panic!(err);
-            // }
-            // if self.quit { break; }
-            if let Err(error) = self.process_key() {
-                panic!(error);
-            }
-        // }
-        Ok(())
+    pub fn run(mut self) -> TermResult<()> {
+        loop {
+            Term::process_key()?;
+        }
     }
 
     fn refresh(&self) -> TermResult<()> {
@@ -60,33 +55,6 @@ impl Editor {
         }
         Term::ex(TermOp::CursorEnabled(true))?;
         Term::ex(TermOp::Flush)
-    }
-
-    fn process_key(&mut self) -> TermResult<()> {
-        let key_event = Term::read_key()?;
-        use KeyCode::*;
-        match key_event.code {
-            Up | Char('j')
-            | Down | Char('h')
-            | Left | Char('k')
-            | Right | Char('l')
-            | PageUp | Char('d')
-            | PageDown | Char('e')
-            | End | Char('f')
-            | Home | Char('s') => {self.move_cursor(key_event)?;},
-            Char('q') => { self.quit = true; },
-            Char('i') => { self.insert = true; },
-            Char(c) => {
-                if c.is_control() {
-                    println!("{:?}\r", c as u8);
-                } else {
-                    println!("{:?} ({})\r", c as u8, c);
-                }
-            },
-            _ => {println!("{:?}\r", key_event.code);},
-        };
-        self.scroll();
-        Ok(())
     }
 
     fn draw_row(&self, row: &Row) {
@@ -145,40 +113,6 @@ impl Editor {
         }
     }
 
-    fn move_cursor(&mut self, event: KeyEvent) -> TermResult<()> {
-        use KeyCode::*;
-        let mut new: Coords = self.cursor.clone();
-        if event.modifiers.is_empty() {
-            match event.code {
-                Up | Char('k') => {Dir::Up.go(1)?; new.y+= 1;},
-                Down | Char('j') => {Dir::Down.go(1)?; new.y -=1 },
-                Left | Char('h')=> {Dir::Left.go(1)?; new.x -=1;},
-                Right | Char('l')=> {Dir::Right.go(1)?; new.x += 1;},
-                PageUp => {Term::ex(TermOp::Scroll(Dir::Up, 1))?;},
-                PageDown => {Term::ex(TermOp::Scroll(Dir::Up, 1))?},
-                Home => new.x = 0,
-                End => new.x = self.curr_file()
-                    .get(self.cursor.x as usize)
-                    .unwrap().len(),
-                _ => {},
-            };
-        } else if event.modifiers.contains(KeyModifiers::CONTROL) {
-            use TermOp::Scroll;
-            match event.code {
-                Char('j') => {Term::ex(Scroll(Dir::Down, 1))?;},
-                Char('k') => {Term::ex(Scroll(Dir::Up, 1))?;},
-                _ => new.y = 0,
-            }
-        }
-        let width = match self.curr_file().get(self.cursor.y) {
-            Some(row) => row.len(),
-            None => 0,
-        };
-        if self.cursor.x > width { new.x = width }
-        self.cursor = new;
-        Ok(())
-    }
-
     fn welcome(&self) {
         let vers: &str = env!("CARGO_PKG_VERSION");
         let msg = format!("Div {}\r", vers);
@@ -212,10 +146,11 @@ impl Default for Editor {
         } else {
             files = vec![OpenFile::default()]
         };
+        let term = Term::default();
+        term.init().expect("Could not init");
         Self {
-            term: Term::default(),
             quit: false,
-            files,
+            files, term,
             ..Default::default()
         }
     }
@@ -252,9 +187,10 @@ pub enum Dir {
 
 impl Dir {
 
-    pub fn go(self, amount: usize) -> TermResult<()> {
+    pub fn go(self, term: Term, amount: usize) -> TermResult<()> {
         Term::ex(TermOp::Move(self, amount as u16))?;
         Ok(())
     }
 }
+
 

@@ -1,15 +1,23 @@
 [package]
-name = "di-edit"
+name = "ded"
 version = "0.1.0"
 authors = ["Chris P <chris@pecu.io>"]
 edition = "2018"
 description = "A terminal text editor, specialized for writing and scripting"
 homepage = "https://pecu.io/dx"
 
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ded"
+path = "src/bin/ded.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 crossterm = {version="*", features=["event-stream"]}
+term = "*"
 unicode-segmentation = "*"
 unicode-width = "*"
 # shellexpand = "*"

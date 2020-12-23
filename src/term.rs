@@ -9,7 +9,10 @@ use crossterm::{
     style::{Color, SetForegroundColor, SetBackgroundColor, SetColors},
 };
 
-use crate::editor::{Coords, Dir};
+use crate::{
+    editor::{Coords, Dir, action::Action},
+
+};
 
 #[derive(Debug)]
 pub struct Term {
@@ -39,9 +42,19 @@ impl Term {
         if io::stdin().is_tty() && io::stdout().is_tty() {
             terminal::enable_raw_mode()?;
         }
-        //execute!(io::stdout(), terminal::SetTitle("dd"))?;
-        Self::ex(TermOp::Enter)?;
+        execute!(io::stdout(), terminal::SetTitle("dd"))?;
         Ok ( Self { dims, _stdout: io::stdout() })
+    }
+
+    pub fn init(&self) -> TermResult<()> {
+        Self::ex(TermOp::Enter)?;
+        Ok(())
+    }
+
+    pub fn process_key() -> TermResult<()> {
+        let action = Self::read_key()?;
+        action.execute()?;
+        Ok(())
     }
 
     pub fn ex(operation: TermOp) -> TermResult<()> {
@@ -86,12 +99,26 @@ impl Term {
         self.dims
     }
 
-    pub fn read_key() -> TermResult<KeyEvent> {
+    pub fn read_key() -> TermResult<Action> {
         loop {
             if let Event::Key(key_event) = read()? {
-                return Ok(key_event);
+                let act = Action::from((key_event.code, key_event.modifiers));
+                return Ok(act);
             }
         }
+    }
+
+    pub fn colors() -> usize {
+        if std::env::var("COLORTERM").unwrap_or_else(|_| "".into()).eq("truecolor".into()) {
+            return 24;
+        } else if let Ok(inf) = term::terminfo::TermInfo::from_env() {
+            if let Some(num) = inf.numbers.get("colors") {
+                match num {
+                    &256 => return 256,
+                    _ => return 16,
+                }
+            } else { return 16 }
+        } else { return 16  }
     }
 
 }
